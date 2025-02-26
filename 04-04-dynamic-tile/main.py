@@ -23,7 +23,7 @@ def get_tile(z: int, x: int, y: int, conn=Depends(get_connection)):
         cur.execute(
             """WITH mvtgeom AS (
                 SELECT ST_AsMVTGeom(ST_Transform(geom, 3857), ST_TileEnvelope(%(z)s, %(x)s, %(y)s)) AS geom
-                FROM school
+                FROM admin
                 WHERE ST_Transform(geom, 3857) && ST_TileEnvelope(%(z)s, %(x)s, %(y)s)
             )
             SELECT ST_AsMVT(mvtgeom.*, 'vector')
