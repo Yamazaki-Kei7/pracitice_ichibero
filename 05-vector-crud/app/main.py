@@ -47,4 +47,20 @@ def get_pois(conn=Depends(get_connection)):
     }
 
 
+@app.get("/pois_sql")
+def get_pois_sql(conn=Depends(get_connection)):
+    import json
+
+    with conn.cursor() as cur:
+        cur.execute("SELECT ST_AsGeoJSON(poi.*) FROM poi")
+        res = cur.fetchall()
+
+    features = [json.loads(row[0]) for row in res]
+
+    return {
+        "type": "FeatureCollection",
+        "features": features,
+    }
+
+
 app.mount("/", StaticFiles(directory="static"), name="static")
