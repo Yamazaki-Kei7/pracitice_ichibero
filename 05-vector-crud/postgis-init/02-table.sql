@@ -1,4 +1,4 @@
-CRATE TABLE IF NOT EXISTS poi (
+CREATE TABLE IF NOT EXISTS poi (
   id SERIAL PRIMARY KEY,
   name TEXT NOT NULL,
   geom GEOMETRY(POINT, 4326) NOT NULL
@@ -6,7 +6,7 @@ CRATE TABLE IF NOT EXISTS poi (
 
 CREATE INDEX poi_geom_idx ON poi GIST (geom);
 
-DELETE ROWS FROM poi WHERE name LIKE '平面直角座標系%';
+DELETE FROM poi WHERE name LIKE '平面直角座標系%';
 INSERT INTO poi (name, geom) VALUES
   ('平面直角座標系: 1系原点', ST_GeomFromText('POINT(127.5 26)', 4326)),
   ('平面直角座標系: 2系原点', ST_GeomFromText('POINT(131.0 33)', 4326)),
