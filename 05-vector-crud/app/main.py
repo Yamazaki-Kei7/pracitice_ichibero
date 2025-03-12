@@ -63,4 +63,18 @@ def get_pois_sql(conn=Depends(get_connection)):
     }
 
 
+@app.get("/pois_sql2")
+def get_pois_sql2(conn=Depends(get_connection)):
+    with conn.cursor() as cur:
+        cur.execute(
+            """SELECT json_build_object(
+                'type', 'FeatureCollection',
+                'features', COALESCE(json_agg(ST_AsGeoJSON(poi.*)::json), '[]'::json)
+            ) FROM poi"""
+        )
+        res = cur.fetchall()
+
+    return res[0][0]
+
+
 app.mount("/", StaticFiles(directory="static"), name="static")
