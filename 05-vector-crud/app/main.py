@@ -1,6 +1,6 @@
 import psycopg2
 import psycopg2.pool
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Response, status
 from fastapi.staticfiles import StaticFiles
 
 from app.models import PoiCreate
@@ -129,6 +129,16 @@ def get_pois_sql2(bbox: str, conn=Depends(get_connection)):
         )
         res = cur.fetchone()
     return res[0]
+
+
+@app.delete("/pois/{id}")
+def delete_poi(id: int, conn=Depends(get_connection)):
+    """POIテーブルの地物を削除"""
+    with conn.cursor() as cur:
+        cur.execute("DELETE FROM poi WHERE id = %s", (id,))
+        conn.commit()
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 app.mount("/", StaticFiles(directory="static"), name="static")
