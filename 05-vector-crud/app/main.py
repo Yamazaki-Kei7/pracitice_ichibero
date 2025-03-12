@@ -64,17 +64,33 @@ def get_pois_sql(conn=Depends(get_connection)):
 
 
 @app.get("/pois_sql2")
-def get_pois_sql2(conn=Depends(get_connection)):
+def get_pois_sql2(bbox: str, conn=Depends(get_connection)):
+    """
+    PoIテーブルの地物をGeoJSONとして返す。GeoJSON-FeatureCollectionはSQLで生成
+    """
+
+    # クエリパラメータbboxの値をチェック
+    _bbox = bbox.split(",")
+    if len(_bbox) != 4:
+        raise ValueError(
+            "bboxの値が不正です。minx,miny,maxx,maxyの順でカンマ区切りで指定してください。"
+        )
+    minx, miny, maxx, maxy = list(map(float, _bbox))
+
     with conn.cursor() as cur:
+        # As Geojson
         cur.execute(
             """SELECT json_build_object(
                 'type', 'FeatureCollection',
                 'features', COALESCE(json_agg(ST_AsGeoJSON(poi.*)::json), '[]'::json)
-            ) FROM poi"""
+            )
+            FROM poi
+            WHERE geom && ST_MakeEnvelope(%s, %s, %s, %s, 4326)
+            LIMIT 100 """,
+            (minx, miny, maxx, maxy),
         )
-        res = cur.fetchall()
-
-    return res[0][0]
+        res = cur.fetchone()
+    return res[0]
 
 
 app.mount("/", StaticFiles(directory="static"), name="static")
