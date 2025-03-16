@@ -8,7 +8,7 @@ from app.models import PoiCreate, PoiUpdate
 app = FastAPI()
 
 pool = psycopg2.pool.SimpleConnectionPool(
-    dsn="postgresql://postgres:postgres@postgis:5432/postgres", minconn=2, maxconn=4
+    dsn="postgresql://postgres:postgres@postgis:5432/postgres", minconn=2, maxconn=20
 )
 
 
@@ -180,6 +180,30 @@ def update_poi(poi_id: int, data: PoiUpdate, conn=Depends(get_connection)):
             "name": name,
         },
     }
+
+
+@app.get("/pois/tiles/{z}/{x}/{y}.pbf")
+def get_pois_tiles(z: int, x: int, y: int, conn=Depends(get_connection)):
+    """POIテーブルの地物をMVTとして返す"""
+
+    with conn.cursor() as cur:
+        cur.execute(
+            """WITH mvtgeom AS (
+                SELECT ST_AsMVTGeom(
+                    ST_Transform(geom, 3857), ST_TileEnvelope(%(z)s, %(x)s, %(y)s)) AS geom, id, name
+                FROM poi
+                WHERE ST_Transform(geom, 3857) && ST_TileEnvelope(%(z)s, %(x)s, %(y)s)
+            )
+            SELECT ST_AsMVT(mvtgeom.*, 'poi', 4096, 'geom')
+            FROM mvtgeom;""",
+            {"z": z, "x": x, "y": y},
+        )
+        val = cur.fetchone()[0]
+
+    return Response(
+        content=val.tobytes(),
+        media_type="application/vnd.mapbox-vector-tile",
+    )
 
 
 app.mount("/", StaticFiles(directory="static"), name="static")
