@@ -190,6 +190,74 @@
           ],
         },
       });
+
+      mapGeojson.on("click", (e) => {
+        if (popup !== null) {
+          // ポップアップが表示されている場合は削除するだけ
+          clearPopup();
+          return;
+        }
+
+        // クリックした位置に地物があるかどうかを取得
+        const features = mapGeojson.queryRenderedFeatures(e.point, {
+          layers: ["poi"],
+        });
+
+        if (features.length === 0) {
+          // クリックした位置に地物がない場合
+          const longitude = e.lngLat.lng;
+          const latitude = e.lngLat.lat;
+          const name = prompt("POIを作成します 名前を入力してください");
+          if (name === null) return;
+          createPoi({ longitude, latitude, name });
+          console.log("create poi", longitude, latitude, name);
+        } else {
+          // 地物がある場合
+          const feature = features[0];
+
+          // タイル表示エリア
+          const nameInput = document.createElement("input");
+          nameInput.type = "text";
+          nameInput.value = feature.properties.name;
+
+          // 更新ボタン
+          const updateButton = document.createElement("button");
+          updateButton.textContent = "更新";
+          updateButton.onclick = async () => {
+            await updatePoi(feature.properties.id, nameInput.value);
+            clearPopup();
+          };
+
+          // 削除ボタン
+          const deleteButton = document.createElement("button");
+          deleteButton.textContent = "削除";
+          deleteButton.onclick = async () => {
+            if (!confirm("削除しますか？")) return;
+            await deletePoi(feature.properties.id);
+            clearPopup();
+          };
+
+          // ポップアップに表示する要素を作成
+          const div = document.createElement("div");
+          div.style = "diplay: flex;";
+          div.appendChild(nameInput);
+          div.appendChild(updateButton);
+          div.appendChild(deleteButton);
+
+          // ポップアップにUIをセットして地図上に表示
+          popup = new maplibregl.Popup()
+            .setLngLat(feature.geometry.coordinates)
+            .setDOMContent(div)
+            .setMaxWidth("400px")
+            .addTo(mapGeojson);
+        }
+      });
+
+      const reloadPoi = () => {
+        const source = mapMvt.getSource("poimvt");
+        source.setTiles(["http://localhost:3000/pois/tiles/{z}/{x}/{y}.pbf"]);
+      };
+
       // 連動処理
       mapGeojson.on("move", () => {
         mapMvt.panTo(mapGeojson.getCenter(), { duration: 0 });

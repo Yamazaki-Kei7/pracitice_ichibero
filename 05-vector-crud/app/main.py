@@ -1,11 +1,22 @@
 import psycopg2
 import psycopg2.pool
 from fastapi import Depends, FastAPI, Response
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.model import PoiCreate, PoiUpdate
 
 app = FastAPI()
+
+# CORSミドルウェアを追加
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # すべてのオリジンを許可
+    allow_credentials=True,
+    allow_methods=["*"],  # すべてのメソッドを許可
+    allow_headers=["*"],  # すべてのヘッダーを許可
+)
+
 pool = psycopg2.pool.SimpleConnectionPool(
     dsn="postgresql://postgres:postgres@postgis:5432/postgres", minconn=2, maxconn=4
 )
@@ -113,8 +124,10 @@ def get_pois_sql2(bbox: str, conn=Depends(get_connection)):
                 "maxy": maxy,
             },
         )
-        res = cur.fetchall()
-    return res[0][0]  # dict型
+        res = cur.fetchone()
+
+    # 辞書型のレスポンスを返す
+    return res[0]
 
 
 @app.post("/pois")
