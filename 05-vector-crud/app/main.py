@@ -13,7 +13,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # すべてのオリジンを許可
     allow_credentials=True,
-    allow_methods=["*"],  # すべてのメソッドを許可
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],  # 明示的にすべてのメソッドを許可
     allow_headers=["*"],  # すべてのヘッダーを許可
 )
 
@@ -185,6 +185,48 @@ def delete_poi(id: int, conn=Depends(get_connection)):
 def update_poi(poi_id: int, data: PoiUpdate, conn=Depends(get_connection)):
     """
     PoIテーブルの地物を更新
+    """
+    with conn.cursor() as cur:
+        # 更新対象の地物が存在するか確認
+        cur.execute("SELECT id FROM poi WHERE id = %s", (poi_id,))
+        if not cur.fetchone():
+            return Response(status_code=404)
+
+        # 更新
+        cur.execute(
+            """UPDATE poi SET
+                name = COALESCE(%s, name),
+                geom = ST_SetSRID(ST_MakePoint(COALESCE(%s, ST_X(geom)), COALESCE(%s, ST_Y(geom))), 4326)
+                WHERE id = %s""",
+            (data.name, data.longitude, data.latitude, poi_id),
+        )
+        conn.commit()
+
+        # 更新した地物の情報を取得
+        cur.execute(
+            "SELECT id, name, ST_X(geom) as longitude, ST_Y(geom) as latitude FROM poi WHERE id = %s",
+            (poi_id,),
+        )
+        _id, name, longitude, latitude = cur.fetchone()
+
+    # 更新した地物をGeoJSONとして返す
+    return {
+        "type": "Feature",
+        "geometry": {
+            "type": "Point",
+            "coordinates": [longitude, latitude],
+        },
+        "properties": {
+            "id": _id,
+            "name": name,
+        },
+    }
+
+
+@app.put("/pois/{poi_id}")
+def update_poi_put(poi_id: int, data: PoiUpdate, conn=Depends(get_connection)):
+    """
+    PoIテーブルの地物を更新（PUTメソッド）
     """
     with conn.cursor() as cur:
         # 更新対象の地物が存在するか確認
