@@ -33,6 +33,168 @@
         <div id="map-geojson" style="height: 95%"></div>
       </div>
     </div>
-    <script></script>
+    <script>
+      /**
+       * 共通処理
+       */
+
+      let popup = null; // ポップアップのインスタンスを保持する変数
+
+      const createPoi = async ({ longitude, latitude, name }) => {
+        const response = await fetch("http://localhost:3000/pois", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ longitude, latitude, name }),
+        });
+        await loadPoi();
+        reloadPoi();
+        alert("登録しました");
+      };
+
+      const deletePoi = async (id) => {
+        const response = await fetch(`http://localhost:3000/pois/${id}`, {
+          method: "DELETE",
+        });
+        await loadPoi();
+        reloadPoi();
+        alert("削除しました");
+      };
+
+      const updatePoi = async (id, name) => {
+        const response = await fetch(`http://localhost:3000/pois/${id}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ name }),
+        });
+        await loadPoi();
+        reloadPoi();
+        alert("更新しました");
+      };
+
+      const clearPopup = () => {
+        if (popup) {
+          popup.remove();
+          popup = null;
+        }
+      };
+
+      /**
+       * GeoJSONでレスポンスされるエンドポイント向けの実装
+       */
+
+      const mapGeojson = new maplibregl.Map({
+        hash: true,
+        container: "map-geojson", // container id
+        renderWorldCopies: false,
+        style: {
+          version: 8,
+          sources: {
+            gsistd: {
+              type: "raster",
+              tiles: [
+                "https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png",
+              ],
+              tileSize: 256,
+              attribution: "地理院タイル",
+            },
+            poi: {
+              type: "geojson",
+              data: {
+                type: "FeatureCollection",
+                features: [],
+              },
+            },
+          },
+          layers: [
+            {
+              id: "gsistd",
+              type: "raster",
+              source: "gsistd",
+            },
+            {
+              id: "poi",
+              type: "circle",
+              source: "poi",
+              paint: {
+                "circle-color": "blue",
+                "circle-radius": 10,
+                "circle-stroke-width": 2,
+                "circle-stroke-color": "white",
+              },
+            },
+          ],
+        },
+      });
+      const loadPoi = async () => {
+        // 地図の範囲を取得
+        const bounds = mapGeojson.getBounds();
+        const minx = Math.max(bounds.getWest(), -179);
+        const miny = Math.max(bounds.getSouth(), -85);
+        const maxx = Math.min(bounds.getEast(), 179);
+        const maxy = Math.min(bounds.getNorth(), 85);
+
+        const response = await fetch(
+          `http://localhost:3000/pois_sql2?bbox=${minx},${miny},${maxx},${maxy}`
+        );
+        const data = await response.json();
+        mapGeojson.getSource("poi").setData(data);
+      };
+      mapGeojson.on("load", async () => await loadPoi()); // 初期ロード
+      mapGeojson.on("moveend", async () => await loadPoi()); // マップの移動完了時に画面範囲の地物を取得
+      /**
+       * MVTでレスポンスされるエンドポイント向けの実装
+       */
+
+      const mapMvt = new maplibregl.Map({
+        hash: true,
+        container: "map-mvt", // container id
+        renderWorldCopies: false,
+        style: {
+          version: 8,
+          sources: {
+            gsistd: {
+              type: "raster",
+              tiles: [
+                "https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png",
+              ],
+              tileSize: 256,
+              attribution: "地理院タイル",
+            },
+            poimvt: {
+              type: "vector",
+              tiles: ["http://localhost:3000/pois/tiles/{z}/{x}/{y}.pbf"],
+            },
+          },
+          layers: [
+            {
+              id: "gsistd",
+              type: "raster",
+              source: "gsistd",
+            },
+            {
+              id: "poi",
+              type: "circle",
+              source: "poimvt",
+              "source-layer": "poi",
+              paint: {
+                "circle-color": "red",
+                "circle-radius": 10,
+                "circle-stroke-width": 2,
+                "circle-stroke-color": "white",
+              },
+            },
+          ],
+        },
+      });
+      // 連動処理
+      mapGeojson.on("move", () => {
+        mapMvt.panTo(mapGeojson.getCenter(), { duration: 0 });
+        mapMvt.setZoom(mapGeojson.getZoom());
+      });
+    </script>
   </body>
 </html>

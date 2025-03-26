@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel
 
 
@@ -8,6 +10,6 @@ class PoiCreate(BaseModel):
 
 
 class PoiUpdate(BaseModel):
-    name: str | None = None
-    longitude: float | None = None
-    latitude: float | None = None
+    name: Optional[str] = None
+    longitude: Optional[float] = None
+    latitude: Optional[float] = None

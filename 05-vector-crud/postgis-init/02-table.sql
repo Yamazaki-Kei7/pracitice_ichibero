@@ -4,9 +4,9 @@ CREATE TABLE IF NOT EXISTS poi (
   geom GEOMETRY(POINT, 4326) NOT NULL
 );
 
-CREATE INDEX poi_geom_idx ON poi GIST (geom);
+CREATE INDEX poi_geom_idx ON poi USING GIST (geom);
 
-DELETE FROM poi WHERE name LIKE '平面直角座標系%';
+DELETE ROWS FROM poi WHERE name LIKE '平面直角座標系%'; -- 既存のデータを削除
 INSERT INTO poi (name, geom) VALUES
   ('平面直角座標系: 1系原点', ST_GeomFromText('POINT(127.5 26)', 4326)),
   ('平面直角座標系: 2系原点', ST_GeomFromText('POINT(131.0 33)', 4326)),
