@@ -25,3 +25,5 @@ ENV/
 # Local development settings
 .env
 
+
+*.tif
