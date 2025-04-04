@@ -34,3 +34,12 @@ async def make_image_ndvi():
         imgdata.rescale(((0, 1),))
         png = imgdata.render(img_format="PNG", **img_profiles.get("png"))
     return Response(png, media_type="image/png")
+
+
+@app.get("/rgbnir_remote_cog.png")
+async def make_image_remote_cog(scale_min: float, scale_max: float):
+    with Reader("http://fileserver/rgbnir_cog.tif") as image:
+        imgdata = image.preview([1, 2, 3])
+        imgdata.rescale(((scale_min, scale_max),))
+        png = imgdata.render(img_format="PNG", **img_profiles.get("png"))
+    return Response(png, media_type="image/png")
