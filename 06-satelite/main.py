@@ -19,8 +19,9 @@ async def make_image():
 
 
 @app.get("/rgbnir_cog.png")
-async def make_image_cog():
+async def make_image_cog(scale_min: float, scale_max: float):
     with Reader("static/rgbnir_cog.tif") as image:
         imgdata = image.preview([1, 2, 3])  # band-1, 2, 3
+        imgdata.rescale(((scale_min, scale_max),))
         png = imgdata.render(img_format="PNG", **img_profiles.get("png"))
     return Response(png, media_type="image/png")
