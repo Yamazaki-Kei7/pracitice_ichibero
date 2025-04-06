@@ -1,8 +1,10 @@
 from fastapi import FastAPI, Response
+from fastapi.staticfiles import StaticFiles
 from rio_tiler.io import Reader
 from rio_tiler.profiles import img_profiles
 
 app = FastAPI()
+app.mount("/", StaticFiles(directory="static"), name="static")
 
 
 @app.get("/health")
@@ -64,6 +66,21 @@ async def make_image_remote_cog_part(
             dst_crs="EPSG:32654",
             max_size=max_size,
         )
+        imgdata.rescale(((scale_min, scale_max),))
+        png = imgdata.render(img_format="PNG", **img_profiles.get("png"))
+    return Response(png, media_type="image/png")
+
+
+@app.get("/tiles/{z}/{x}/{y}.webp")
+async def make_image_remote_cog_tile(
+    z: int,
+    x: int,
+    y: int,
+    scale_min: float = 0,
+    scale_max: float = 2000,
+):
+    with Reader("http://fileserver/rgbnir_cog.tif") as image:
+        imgdata = image.tile(x, y, z, indexes=(1, 2, 3), resampling_methos="bilinear")
         imgdata.rescale(((scale_min, scale_max),))
         png = imgdata.render(img_format="PNG", **img_profiles.get("png"))
     return Response(png, media_type="image/png")
