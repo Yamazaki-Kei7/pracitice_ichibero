@@ -1,0 +1,4 @@
+CREATE TABLE poinrs (
+  id SERIAL PRIMARY KEY,
+  geom GEOMETRY(Point, 4326)
+);
