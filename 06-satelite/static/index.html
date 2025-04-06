@@ -47,6 +47,12 @@
               tileSize: 256,
               attribution: "Copernicus Sentinel data 2023' for Sentinel data",
             },
+            raster_remote: {
+              type: "raster",
+              tiles: ["http://localhost:3000/tiles/B02/{z}/{x}/{y}.png"],
+              tileSize: 256,
+              attribution: "Copernicus Sentinel data 2023' for Sentinel data",
+            },
           },
           layers: [
             {
@@ -58,6 +64,11 @@
               id: "raster",
               type: "raster",
               source: "raster",
+            },
+            {
+              id: "raster_remote",
+              type: "raster",
+              source: "raster_remote",
             },
           ],
         },
