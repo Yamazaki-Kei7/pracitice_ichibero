@@ -39,9 +39,9 @@ services:
       - "5432:5432"
     volumes:
       - postgis-data:/var/lib/postgresql
-        - ./postgis-init/:docker-entrypoint-initdb.d/
+      - ./postgis-init/:/docker-entrypoint-initdb.d/
     healthcheck:
-      test: ["COM-SHELL", "pg_isready"]
+      test: ["CMD", "pg_isready", "-U", "postgres"]
       interval: 10s
       timeout: 10s
       retries: 10
