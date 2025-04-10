@@ -193,7 +193,7 @@ async def search_dataset(
         return dataset
 
 
-@app.get("/points/{point_id}/satelite.jpg")
+@app.get("/points/{point_id}/satellite.jpg")
 async def satelite_preview(
     point_id: int, max_size: int = 256, conn=Depends(get_connection)
 ):
