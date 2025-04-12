@@ -39,19 +39,19 @@ const loadMarkers = async () => {
     bounds.getWest(),
     bounds.getSouth(),
     bounds.getEast(),
-    bounds.getNorth()
+    bounds.getNorth(),
   ];
-  
+
   const points = await loadPoints(bbox);
-  
+
   // points.featuresがundefinedまたは空の配列の場合の対策
   if (points.features && points.features.length > 0) {
     points.features.forEach((feature) => {
-    const marker = new Marker()
-      .setLngLat(feature.geometry.coordinates)
-      .addTo(map);
-    markers.push(marker);
-  });
+      const marker = new Marker()
+        .setLngLat(feature.geometry.coordinates)
+        .addTo(map);
+      markers.push(marker);
+    });
   }
 };
 
@@ -77,3 +77,28 @@ map.on('click', async (e) => {
   clearMarkers();
   await loadMarkers();
 });
+
+const createPopupDom = (id: string) => {
+  const popupDom = document.createElement('div');
+  popupDom.style.display = 'flex';
+  popupDom.style.flexDirection = 'column';
+
+  const anchor = document.createElement('a');
+  anchor.href = satelliteImageUrl(id, 1024);
+  anchor.innerHTML = `<img src="${satelliteImageUrl(
+    id,
+  )}" width="256" height="256" />`;
+
+  const buttonDom = document.createElement('button');
+  buttonDom.textContent = '削除';
+  buttonDom.onclick = async () => {
+    if (!confirm('地点を削除しますか')) return;
+    await deletePoint(id);
+    clearMarkers();
+    await loadMarkers();
+  };
+
+  popupDom.appendChild(anchor);
+  popupDom.appendChild(buttonDom);
+  return popupDom;
+};
