@@ -32,27 +32,46 @@ const map = new Map({
 const markers: Marker[] = [];
 let isMarkerClicked = false;
 
+const createPopupDom = (id: string) => {
+  const popupDom = document.createElement('div');
+  popupDom.style.display = 'flex';
+  popupDom.style.flexDirection = 'column';
+
+  const anchor = document.createElement('a');
+  anchor.href = satelliteImageUrl(id, 1024);
+  anchor.innerHTML = `<img src="${satelliteImageUrl(
+    id,
+  )}" width="256" height="256" />`;
+
+  const buttonDom = document.createElement('button');
+  buttonDom.textContent = '削除';
+  buttonDom.onclick = async () => {
+    if (!confirm('地点を削除しますか？')) return;
+    await deletePoint(id);
+    clearMarkers();
+    await loadMarkers();
+  };
+
+  popupDom.appendChild(anchor);
+  popupDom.appendChild(buttonDom);
+  return popupDom;
+};
+
 const loadMarkers = async () => {
-  // マップの現在の表示領域を取得
-  const bounds = map.getBounds();
-  const bbox: [number, number, number, number] = [
-    bounds.getWest(),
-    bounds.getSouth(),
-    bounds.getEast(),
-    bounds.getNorth(),
-  ];
-
-  const points = await loadPoints(bbox);
-
-  // points.featuresがundefinedまたは空の配列の場合の対策
-  if (points.features && points.features.length > 0) {
-    points.features.forEach((feature) => {
-      const marker = new Marker()
-        .setLngLat(feature.geometry.coordinates)
-        .addTo(map);
-      markers.push(marker);
+  const points = await loadPoints();
+  points.features.forEach((feature) => {
+    const popup = new Popup().setMaxWidth('500px');
+    const marker = new Marker()
+      .setLngLat(feature.geometry.coordinates)
+      .addTo(map)
+      .setPopup(popup);
+    marker.getElement().addEventListener('click', () => {
+      isMarkerClicked = true;
+      // ピンのクリック時に画像を読み込ませたいので、DOMを作成するタイミングをマーカーのクリック時にする
+      popup.setDOMContent(createPopupDom(feature.properties.id));
     });
-  }
+    markers.push(marker);
+  });
 };
 
 const clearMarkers = () => {
@@ -77,28 +96,3 @@ map.on('click', async (e) => {
   clearMarkers();
   await loadMarkers();
 });
-
-const createPopupDom = (id: string) => {
-  const popupDom = document.createElement('div');
-  popupDom.style.display = 'flex';
-  popupDom.style.flexDirection = 'column';
-
-  const anchor = document.createElement('a');
-  anchor.href = satelliteImageUrl(id, 1024);
-  anchor.innerHTML = `<img src="${satelliteImageUrl(
-    id,
-  )}" width="256" height="256" />`;
-
-  const buttonDom = document.createElement('button');
-  buttonDom.textContent = '削除';
-  buttonDom.onclick = async () => {
-    if (!confirm('地点を削除しますか')) return;
-    await deletePoint(id);
-    clearMarkers();
-    await loadMarkers();
-  };
-
-  popupDom.appendChild(anchor);
-  popupDom.appendChild(buttonDom);
-  return popupDom;
-};

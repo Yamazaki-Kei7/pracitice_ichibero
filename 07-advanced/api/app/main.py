@@ -176,7 +176,7 @@ async def search_dataset(
 ):
     """STACを使って衛星画像を検索"""
 
-    url = "http://earth-search.aws.element84.com/v1/collections/sentinel-2-l2a/items"
+    url = "https://earth-search.aws.element84.com/v1/collections/sentinel-2-l2a/items"
     params = {
         "limit": limit,
         "bbox": f"{minx},{miny},{maxx},{maxy}",
